@@ -7,7 +7,7 @@ let tempUser = {};
 let loading = false;
 let divAddUserParent = document.getElementById("addNewUserForm")
 let divCardViewer = document.getElementById("idCard")
-let emptyUser = {firstName : "", lastName : "", age : "", email : "", password : ""};
+let emptyUser = {firstName: "", lastName: "", age: "", email: "", password: ""};
 let user_choose_id = document.getElementById("user_choose")
 let admin_choose_id = document.getElementById("admin_choose")
 let header_text_id = document.getElementById("header_text")
@@ -15,9 +15,12 @@ let header_nav_id = document.getElementById("header_nav")
 let header_card_id = document.getElementById("header_card")
 let nav_innerHtml = header_nav_id.innerHTML
 let trElement = document.getElementById("id_tr")
+let apiUserURL = "http://localhost:8080/api/users"
+let apiUserAuthURL = "http://localhost:8080/api/userAuth"
+let apiRolesURL = "http://localhost:8080/api/roles"
 
 
-function getForm (form_popup, disableId = false, disableEver = false) {
+function getForm(form_popup, disableId = false, disableEver = false) {
     let lock_id = ""
     let lock_ever = ""
     let lock_select = ""
@@ -58,7 +61,7 @@ function getForm (form_popup, disableId = false, disableEver = false) {
                     </form>`;
 }
 
-function save (user) {
+function save(user) {
     tempUser = user;
     formElementsAdd["id"].value = user.id;
     formElementsAdd["id"].addEventListener("change", e => {
@@ -87,9 +90,9 @@ function save (user) {
     formElementsAdd["roles"].replaceChildren();
     formElementsAdd["roles"].addEventListener("change", e => {
         tempUser.roles = [];
-        for(let i = 0; i < e.target.options.length; i++) {
+        for (let i = 0; i < e.target.options.length; i++) {
             if (e.target.options[i].selected) {
-                for(let j = 0; j < roles.length; j++) {
+                for (let j = 0; j < roles.length; j++) {
                     if (roles[j].id === Number(e.target.options[i].value)) {
                         tempUser.roles.push(roles[j]);
                         break;
@@ -99,6 +102,7 @@ function save (user) {
         }
     })
     roles.forEach(role => {
+        console.log(role)
         let element = document.createElement("option");
         element.value = role.id;
         element.innerHTML = role.name.substring(5);
@@ -115,15 +119,16 @@ function save (user) {
         e.preventDefault();
         e.stopPropagation();
         loading = true;
-        fetch("http://localhost:8080/api/users", {
-            method:'POST',
-            headers:{
+        fetch(apiUserURL, {
+            method: 'POST',
+            headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(tempUser)
         }).then((res) => {
             if (res.ok) {
-                getAllRoles().then(res => {})
+                getAllRoles().then(res => {
+                })
                 getAllUsers().then(res => {
                     loading = false
                     navViewAllUsers()
@@ -139,7 +144,7 @@ function save (user) {
 }
 
 
-function edit (user) {
+function edit(user) {
     tempUser = user;
     formElementsEdit["id"].value = user.id;
     formElementsEdit["id"].addEventListener("change", e => {
@@ -161,16 +166,16 @@ function edit (user) {
     formElementsEdit["email"].addEventListener("change", e => {
         tempUser.email = e.target.value;
     })
-    formElementsEdit["password"].value = user.password;
+    formElementsEdit["password"].value = "";
     formElementsEdit["password"].addEventListener("change", e => {
         tempUser.password = e.target.value;
     })
     formElementsEdit["roles"].replaceChildren();
     formElementsEdit["roles"].addEventListener("change", e => {
         tempUser.roles = [];
-        for(let i = 0; i < e.target.options.length; i++) {
+        for (let i = 0; i < e.target.options.length; i++) {
             if (e.target.options[i].selected) {
-                for(let j = 0; j < roles.length; j++) {
+                for (let j = 0; j < roles.length; j++) {
                     if (roles[j].id === Number(e.target.options[i].value)) {
                         tempUser.roles.push(roles[j]);
                         break;
@@ -196,15 +201,16 @@ function edit (user) {
         e.preventDefault();
         e.stopPropagation();
         loading = true;
-        fetch("http://localhost:8080/api/users", {
-            method:'PUT',
-            headers:{
+        fetch(apiUserURL, {
+            method: 'PUT',
+            headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify(tempUser)
         }).then((res) => {
             if (res.ok) {
-                getAllRoles().then(res => {})
+                getAllRoles().then(res => {
+                })
                 getAllUsers().then(res => {
                     loading = false
                     $('#editModal').modal('hide')
@@ -219,13 +225,13 @@ function edit (user) {
     })
 }
 
-function del (user) {
+function del(user) {
     formElementsDelete["id"].value = user.id;
     formElementsDelete["firstName"].value = user.firstName;
     formElementsDelete["lastName"].value = user.lastName;
     formElementsDelete["age"].value = user.age;
     formElementsDelete["email"].value = user.email;
-    formElementsDelete["password"].value = user.password;
+    formElementsDelete["password"].value = "";
     formElementsDelete["roles"].replaceChildren();
     user.roles.forEach(role => {
         let element = document.createElement("option");
@@ -233,17 +239,21 @@ function del (user) {
         element.innerHTML = role.name.substring(5);
         formElementsDelete["roles"].appendChild(element);
     });
+    formElementsDelete["button"].userParam = user
     formElementsDelete["button"].addEventListener("click", (e) => {
         if (loading) {
             return;
         }
         loading = true;
-        fetch(`http://localhost:8080/api/users/${user.id}`, {
-            method:'DELETE'
+        fetch(apiUserURL + `/${e.target.userParam.id}`, {
+            method: 'DELETE'
         }).then((res) => {
             if (res.ok) {
-                getAllRoles().then(res => {})
-                getAllUsers().then(res => {loading = false})
+                getAllRoles().then(res => {
+                })
+                getAllUsers().then(res => {
+                    loading = false
+                })
             } else {
                 loading = false;
             }
@@ -255,7 +265,7 @@ function del (user) {
 
 }
 
-function addUserToTable (user, isAdminPage = true) {
+function addUserToTable(user, isAdminPage = true) {
     let userRoles = '';
     let entry = document.createElement("tr");
     user.roles.forEach(role => (userRoles += role.name.substring(5) + " "));
@@ -280,18 +290,22 @@ function addUserToTable (user, isAdminPage = true) {
                                data-target="#deleteModal">Delete</a>
                         </td>`;
         let editButton = entry.getElementsByClassName("btn-info");
-        editButton[0].addEventListener("click", (e) => {edit(user)});
+        editButton[0].addEventListener("click", (e) => {
+            edit(user)
+        });
         let delButton = entry.getElementsByClassName("btn-danger");
-        delButton[0].addEventListener("click", (e) => {del(user)});
+        console.log(user)
+        delButton[0].addEventListener("click", (e) => {
+            del(user)
+        });
     }
-
 
 
     tableBody.appendChild(entry);
 }
 
 
-function createSaveUser () {
+function createSaveUser() {
 
     divAddUserParent.innerHTML = `
             <div class="card-header font-weight-bold">
@@ -343,13 +357,13 @@ function createSaveUser () {
 
 }
 
-function createEditModal () {
+function createEditModal() {
     let divBody = document.createElement("div");
     divBody.className = "modal fade";
     divBody.tabIndex = -1;
-    divBody.role="dialog";
-    divBody.aria_hidden="true";
-    divBody.id="editModal";
+    divBody.role = "dialog";
+    divBody.aria_hidden = "true";
+    divBody.id = "editModal";
 
     divBody.innerHTML = `
 <div class="modal-dialog" role="document">
@@ -394,13 +408,13 @@ function createEditModal () {
 }
 
 
-function createDeleteModal () {
+function createDeleteModal() {
     let divBody = document.createElement("div");
     divBody.className = "modal fade";
     divBody.tabIndex = -1;
-    divBody.role="dialog";
-    divBody.aria_hidden="true";
-    divBody.id="deleteModal";
+    divBody.role = "dialog";
+    divBody.aria_hidden = "true";
+    divBody.id = "deleteModal";
 
     divBody.innerHTML = `
 <div class="modal-dialog" role="document">
@@ -445,7 +459,7 @@ function createDeleteModal () {
 }
 
 
-function navSaveUser () {
+function navSaveUser() {
     document.getElementById("navSaveUser_id").classList.add("active", "disabled")
     document.getElementById("navViewAllUsers_id").classList.remove("active", "disabled")
     divAddUserParent.hidden = false
@@ -454,17 +468,18 @@ function navSaveUser () {
     save(emptyUser);
 }
 
-function navViewAllUsers () {
+function navViewAllUsers() {
     document.getElementById("navViewAllUsers_id").classList.add("active", "disabled")
     document.getElementById("navSaveUser_id").classList.remove("active", "disabled")
     divAddUserParent.hidden = true
     divCardViewer.hidden = false
 }
 
-function navChooseUser () {
+function navChooseUser() {
     user_choose_id.classList.add("active", "disabled")
     admin_choose_id.classList.remove("active", "disabled")
-    getUserAuth().then(res=> {});
+    getUserAuth().then(res => {
+    });
     header_text_id.textContent = "User information-page"
     header_nav_id.innerHTML = ""
     header_card_id.textContent = "About user"
@@ -476,10 +491,11 @@ function navChooseUser () {
                         <th scope="col">Role</th>`;
 }
 
-function navChooseAdmin () {
+function navChooseAdmin() {
     user_choose_id.classList.remove("active", "disabled")
     admin_choose_id.classList.add("active", "disabled")
-    getAllUsers().then(res => {})
+    getAllUsers().then(res => {
+    })
     header_text_id.textContent = "Admin panel"
     header_nav_id.innerHTML = nav_innerHtml
     header_card_id.textContent = "All users"
@@ -495,35 +511,39 @@ function navChooseAdmin () {
 }
 
 
-
-async function getAllUsers () {
+async function getAllUsers() {
     tableBody.replaceChildren()
-    let response = await fetch("http://localhost:8080/api/users");
+    let response = await fetch(apiUserURL);
     let jsonData = await response.json();
-    jsonData.forEach(user => {addUserToTable(user)})
+    jsonData.forEach(user => {
+        addUserToTable(user)
+    })
 }
 
-async function getAllRoles () {
-    let response = await fetch("http://localhost:8080/api/roles");
+async function getAllRoles() {
+    let response = await fetch(apiRolesURL);
     let jsonData = await response.json();
-    jsonData.forEach(role => {roles.push(role)})
+    roles = []
+    jsonData.forEach(role => {
+        roles.push(role)
+    })
 }
 
-async function getUserAuth () {
+async function getUserAuth() {
     tableBody.replaceChildren()
-    let response = await fetch(`http://localhost:8080/api/userAuth`);
+    let response = await fetch(apiUserAuthURL);
     let jsonData = await response.json();
     addUserToTable(jsonData, false)
 }
 
-async function getUserAuthRole () {
-    let response = await fetch(`http://localhost:8080/api/userAuth`);
+async function getUserAuthRole() {
+    let response = await fetch(apiUserAuthURL);
     let jsonData = await response.json();
     return jsonData.roles
 }
 
 
-async function setDefaultState () {
+async function setDefaultState() {
     let roles = await getUserAuthRole()
     let isAdmin = false
     roles.forEach(role => {
@@ -546,4 +566,5 @@ createDeleteModal();
 createEditModal();
 
 
-setDefaultState().then(res=> {});
+setDefaultState().then(res => {
+});
